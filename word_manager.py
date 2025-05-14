@@ -24,8 +24,8 @@ class WordManager:
         if not self.words:
             raise ValueError("No words available in the word list")
         word = random.choice(list(self.words))
-        print(word)
-        print("cddcdcdccdcdcdcdcdcdcdcdcdc")
+        # print(word)
+        # print("cddcdcdccdcdcdcdcdcdcdcdcdc")
         return word
 
     async def is_valid_word(self, word: str) -> bool:
