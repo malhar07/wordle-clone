@@ -250,6 +250,8 @@
         </div>
     </div>
     <script>
+        console.log("SCRIPT LOADED");
+
         const WORD_LENGTH = {{ word_length }};
         const MAX_ATTEMPTS = {{ max_attempts }};
         let currentRow = 0;
@@ -350,7 +352,7 @@
         async function makeGuess() {
             const input = document.getElementById('guess-input');
             const guess = input.value.toUpperCase();
-            
+
             if (guess.length !== WORD_LENGTH) {
                 showMessage('Please enter a 5-letter word', 'error');
                 return;
@@ -365,41 +367,58 @@
                     body: JSON.stringify({ word: guess })
                 });
 
-                const data = await response.json();
-                
-                if (response.status === 400) {
-                    showMessage(data.detail, 'error');
+                console.log("Response raw:", response);
+
+                let data;
+                try {
+                    data = await response.json();
+                    console.log("Parsed response:", data);
+                } catch (e) {
+                    console.error("FETCH ERROR:", e);
+                    showMessage("Unexpected error. Please try again.", "error");
                     return;
                 }
 
+                // Handle API errors (like invalid word, too short, etc.)
+                if (response.status === 400 && !data.game_state?.game_over) {
+                    showMessage(data.detail || "Invalid input", 'error');
+                    return;
+                }
+
+                // Always update tiles and keyboard (even on game over)
                 data.evaluation.forEach((result, i) => {
                     updateTile(currentRow, i, result.letter, result.status);
                     updateKeyboard(result.letter, result.status);
                 });
 
                 currentRow++;
+                input.value = '';
 
-                if (data.game_state.game_over) {
+                // Check if game is over
+                if (data.game_state?.game_over) {
+                    input.disabled = true;
                     if (data.game_state.won) {
                         showMessage('Congratulations! You won!', 'win');
                         triggerConfetti();
                     } else {
                         showMessage('Game Over! Try again!', 'lose');
                         triggerShakeAnimation();
+                        revealWord(data.game_state.current_word);
                     }
-                    input.disabled = true;
-                    revealWord(data.game_state.current_word);
+                } else {
+                    showMessage('');
+                    // Clear next row's tiles
+                    for (let i = 0; i < WORD_LENGTH; i++) {
+                        updateTile(currentRow, i, '', '');
+                    }
                 }
 
-                input.value = '';
-                // Clear the current row's tiles
-                for (let i = 0; i < WORD_LENGTH; i++) {
-                    updateTile(currentRow, i, '', '');
-                }
             } catch (error) {
-                showMessage('You Lost❌❌❌', 'error');
+                console.error("Final catch error:", error);
+                showMessage('An error occurred while making your guess.', 'error');
             }
         }
+
 
         async function newGame() {
             try {

@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -38,7 +38,6 @@ async def get_game(request: Request):
 
 @app.post("/guess")
 async def make_guess(guess_request: GuessRequest):
-    """Make a guess in the game."""
     try:
         evaluation = await game.make_guess(guess_request.word)
         return {
@@ -46,7 +45,28 @@ async def make_guess(guess_request: GuessRequest):
             "game_state": game.get_game_state()
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        return JSONResponse(
+            status_code=400,
+            content={
+                "detail": str(e),
+                "game_state": game.get_game_state()
+            }
+        )
+
+# async def make_guess(guess_request: GuessRequest):
+#     """Make a guess in the game."""
+#     try:
+#         evaluation = await game.make_guess(guess_request.word)
+#         return {
+#             "evaluation": evaluation,
+#             "game_state": game.get_game_state()
+#         }
+#     except ValueError as e:
+#         raise HTTPException(
+#             status_code=400,
+#             detail=str(e),
+#             headers={"X-Game-State": str(game.get_game_state())}
+#         )
 
 @app.post("/reset")
 async def reset_game():

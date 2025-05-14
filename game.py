@@ -42,6 +42,10 @@ class Game:
         # Convert guess to uppercase and strip whitespace
         guess = guess.strip().upper()
 
+        # Check if game is already over
+        if self.game_over:
+            raise ValueError("Game is over")
+
         # Validate word length
         if len(guess) != 5:
             raise ValueError("Word must be exactly 5 letters long")
@@ -50,8 +54,11 @@ class Game:
         if not await self.word_manager.is_valid_word(guess):
             raise ValueError("Not a valid word")
 
-        if self.game_over:
-            raise ValueError("Game is over")
+        # Check if we've reached max attempts
+        if len(self.attempts) >= self.max_attempts:
+            self.game_over = True
+            self.won = False
+            raise ValueError("Maximum attempts reached")
 
         evaluation = self.evaluate_guess(guess)
         self.attempts.append(guess)
@@ -61,7 +68,7 @@ class Game:
         if guess == self.current_word:
             self.game_over = True
             self.won = True
-        # Check if lost
+        # Check if lost (after adding the current attempt)
         elif len(self.attempts) >= self.max_attempts:
             self.game_over = True
             self.won = False
